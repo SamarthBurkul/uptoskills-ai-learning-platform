@@ -29,9 +29,7 @@ const res = await fetch(
   `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
   {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
       fullName: form.username,
