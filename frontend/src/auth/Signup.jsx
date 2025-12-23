@@ -24,18 +24,21 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // send/receive cookies
-        body: JSON.stringify({
-          fullName: form.username,          // backend expects fullName
-          email: form.email,
-          password: form.password,
-        }),
-      });
+      const res = await fetch(
+  `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      fullName: form.username,
+      email: form.email,
+      password: form.password,
+    }),
+  }
+);
 
       const data = await res.json();
 
