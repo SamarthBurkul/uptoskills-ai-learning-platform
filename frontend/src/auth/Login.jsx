@@ -1,3 +1,4 @@
+// frontend/src/components/Auth/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
@@ -10,6 +11,7 @@ const Login = () => {
     password: "",
     remember: true,
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -22,6 +24,15 @@ const Login = () => {
     }));
   };
 
+  const persistAuth = (data) => {
+    if (data?.accessToken) {
+      localStorage.setItem("uptoskills_token", data.accessToken);
+    }
+    if (data?.user) {
+      localStorage.setItem("uptoskills_user", JSON.stringify(data.user));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -32,9 +43,7 @@ const Login = () => {
         `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
             email: form.email,
@@ -43,16 +52,12 @@ const Login = () => {
         }
       );
 
-      const data = await res.json();
-
-      if (!res.ok || data.success === false) {
-        throw new Error(data.message || "Login failed");
+      const json = await res.json();
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || "Login failed");
       }
 
-      if (data.data?.accessToken) {
-        localStorage.setItem("uptoskills_token", data.data.accessToken);
-      }
-
+      persistAuth(json.data);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -65,16 +70,12 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      // 1) Google popup via Firebase
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
-      // 2) Firebase ID token for this user
       const idToken = await user.getIdToken(true);
 
-      // 3) Send to backend for verification + JWT generation
       const res = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/oauth-login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -83,15 +84,12 @@ const Login = () => {
         }
       );
 
-      const data = await res.json();
-      if (!res.ok || data.success === false) {
-        throw new Error(data.message || "Login failed");
+      const json = await res.json();
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || "Login failed");
       }
 
-      if (data.data?.accessToken) {
-        localStorage.setItem("uptoskills_token", data.data.accessToken);
-      }
-
+      persistAuth(json.data);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -108,7 +106,7 @@ const Login = () => {
           <p className="auth-subtitle">Access your AI learning Journey</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit} autoComplete="on">
           <label className="auth-field-label">
             Email Address
             <input
@@ -118,6 +116,7 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Enter your email address here"
               className="auth-input"
+              autoComplete="email"
               required
             />
           </label>
@@ -126,16 +125,22 @@ const Login = () => {
             Password
             <div className="auth-password-wrapper">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 placeholder="••••••••"
                 className="auth-input auth-input-password"
+                autoComplete="current-password"
                 required
               />
-              <span className="auth-eye-icon" aria-hidden="true">
-                👁
+              <span
+                className="auth-eye-icon"
+                aria-hidden="true"
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{ cursor: "pointer", fontSize: 12, marginLeft: 8 }}
+              >
+                {showPassword ? "Hide" : "Show"}
               </span>
             </div>
           </label>
@@ -162,7 +167,9 @@ const Login = () => {
             </button>
           </div>
 
-          {error && <p style={{ color: "red", fontSize: 12 }}>{error}</p>}
+          {error && (
+            <p style={{ color: "red", fontSize: 12 }}>{error}</p>
+          )}
 
           <button
             type="submit"
@@ -182,7 +189,11 @@ const Login = () => {
             <span>Sign in with Google</span>
           </button>
 
-          <button type="button" className="auth-social-btn apple" disabled>
+          <button
+            type="button"
+            className="auth-social-btn apple"
+            disabled
+          >
             <span className="auth-social-icon"></span>
             <span>Sign in with Apple (coming soon)</span>
           </button>

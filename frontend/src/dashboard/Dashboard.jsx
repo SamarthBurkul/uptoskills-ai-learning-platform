@@ -1,3 +1,4 @@
+// frontend/src/components/Dashboard/Dashboard.jsx
 import React from "react";
 import DashboardLayout from "./DashboardLayout";
 
@@ -12,19 +13,34 @@ const Dashboard = () => {
         }
       );
       localStorage.removeItem("uptoskills_token");
+      localStorage.removeItem("uptoskills_user");
       window.location.href = "/login";
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
 
+  const storedUser = localStorage.getItem("uptoskills_user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.5rem",
+          }}
+        >
           <div>
             <h2 className="auth-title">Welcome to your Dashboard</h2>
-            <p className="auth-subtitle">You are logged in.</p>
+            <p className="auth-subtitle">
+              {user
+                ? `You are logged in as ${user.fullName} (${user.email})`
+                : "You are logged in."}
+            </p>
           </div>
           <button className="auth-primary-btn" onClick={handleLogout}>
             Log out
@@ -41,7 +57,8 @@ const Dashboard = () => {
         >
           <h3 style={{ marginBottom: "0.75rem" }}>Coming soon</h3>
           <p style={{ fontSize: "0.9rem", color: "#4b5563" }}>
-            Course cards, progress charts, and AI‑powered recommendations will appear here.
+            Course cards, progress charts, and AI‑powered recommendations
+            will appear here.
           </p>
         </div>
       </div>

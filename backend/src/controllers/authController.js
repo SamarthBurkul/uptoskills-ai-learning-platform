@@ -1,3 +1,4 @@
+// backend/src/controllers/authController.js
 const axios = require("axios");
 const User = require("../models/User");
 
@@ -24,7 +25,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 const setAuthCookies = (res, accessToken, refreshToken) => {
   const options = {
     httpOnly: true,
-    secure: false, // true in production with HTTPS
+    secure: false, // set true once using HTTPS custom domain
     sameSite: "lax",
   };
 
@@ -82,6 +83,8 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  console.log("LOGIN BODY:", req.body); // keep for debugging
+
   if (!email || !password) {
     return fail(res, 400, "Email and password are required");
   }
@@ -113,7 +116,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
 // ---------- Google OAuth ----------
 
-// Verify Firebase ID token using Firebase Auth REST API (accounts:lookup)
 const verifyFirebaseIdToken = async (idToken) => {
   const apiKey = process.env.FIREBASE_WEB_API_KEY;
   if (!apiKey) {
@@ -138,17 +140,10 @@ const verifyFirebaseIdToken = async (idToken) => {
 const oauthLogin = asyncHandler(async (req, res) => {
   const { provider, idToken } = req.body;
 
-  // debug logs IN the handler
   console.log("OAUTH body:", {
     provider,
     idToken: idToken ? idToken.slice(0, 20) + "..." : undefined,
   });
-  console.log(
-    "FIREBASE_WEB_API_KEY:",
-    process.env.FIREBASE_WEB_API_KEY ? "set" : "missing"
-  );
-  console.log("ACCESS_TOKEN_SECRET:", !!process.env.ACCESS_TOKEN_SECRET);
-  console.log("REFRESH_TOKEN_SECRET:", !!process.env.REFRESH_TOKEN_SECRET);
 
   if (provider !== "google") {
     return fail(res, 400, "Unsupported provider");
@@ -166,8 +161,7 @@ const oauthLogin = asyncHandler(async (req, res) => {
       user = await User.create({
         fullName,
         email,
-        // dummy password; real login is via Google only
-        password: `${Date.now()}_${email}`,
+        password: `${Date.now()}_${email}`, // dummy
       });
     }
 
@@ -194,7 +188,6 @@ const oauthLogin = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  // Optional: clear refresh token in DB
   if (req.user?._id) {
     await User.findByIdAndUpdate(
       req.user._id,
@@ -209,16 +202,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     sameSite: "lax",
   };
 
-  // Clear auth cookies
   res
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options);
 
   return success(res, 200, null, "Logged out successfully");
 });
-
-
-// ---------- current user ----------
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return success(res, 200, req.user, "User fetched successfully");
@@ -230,5 +219,4 @@ module.exports = {
   getCurrentUser,
   oauthLogin,
   logoutUser,
-
 };

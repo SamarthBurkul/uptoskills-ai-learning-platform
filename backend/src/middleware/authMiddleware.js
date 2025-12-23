@@ -1,4 +1,4 @@
-// src/middleware/authMiddleware.js
+// backend/src/middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
@@ -11,24 +11,33 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
     req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Unauthorized" });
   }
 
   try {
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-    const user = await User.findById(decodedToken?._id || decodedToken?.id).select(
-      "-password -refreshToken"
+    const decodedToken = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET
     );
 
+    const user = await User.findById(
+      decodedToken?._id || decodedToken?.id
+    ).select("-password -refreshToken");
+
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid token" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid token" });
     }
 
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: "Invalid token" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid token" });
   }
 });
 

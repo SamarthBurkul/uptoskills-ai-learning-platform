@@ -1,3 +1,4 @@
+// frontend/src/components/Auth/Signup.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
@@ -9,6 +10,7 @@ const Signup = () => {
     username: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -24,27 +26,25 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      
-const res = await fetch(
-  `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      fullName: form.username,
-      email: form.email,
-      password: form.password,
-    }),
-  }
-);
-      const data = await res.json();
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            fullName: form.username,
+            email: form.email,
+            password: form.password,
+          }),
+        }
+      );
 
+      const data = await res.json();
       if (!res.ok || data.success === false) {
         throw new Error(data.message || "Signup failed");
       }
 
-      // on success go to login (or dashboard if you want)
       navigate("/login");
     } catch (err) {
       setError(err.message);
@@ -63,7 +63,7 @@ const res = await fetch(
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit} autoComplete="on">
           <label className="auth-field-label">
             Email Address
             <input
@@ -73,6 +73,7 @@ const res = await fetch(
               onChange={handleChange}
               placeholder="Enter your email here"
               className="auth-input"
+              autoComplete="email"
               required
             />
           </label>
@@ -86,6 +87,7 @@ const res = await fetch(
               onChange={handleChange}
               placeholder="Enter your username here"
               className="auth-input"
+              autoComplete="nickname"
               required
             />
           </label>
@@ -94,16 +96,22 @@ const res = await fetch(
             Create a Password
             <div className="auth-password-wrapper">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 placeholder="••••••••"
                 className="auth-input auth-input-password"
+                autoComplete="new-password"
                 required
               />
-              <span className="auth-eye-icon" aria-hidden="true">
-                👁
+              <span
+                className="auth-eye-icon"
+                aria-hidden="true"
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{ cursor: "pointer", fontSize: 12, marginLeft: 8 }}
+              >
+                {showPassword ? "Hide" : "Show"}
               </span>
             </div>
           </label>
@@ -113,9 +121,15 @@ const res = await fetch(
             <span>Minimum 8 characters required</span>
           </div>
 
-          {error && <p style={{ color: "red", fontSize: 12 }}>{error}</p>}
+          {error && (
+            <p style={{ color: "red", fontSize: 12 }}>{error}</p>
+          )}
 
-          <button type="submit" className="auth-primary-btn" disabled={loading}>
+          <button
+            type="submit"
+            className="auth-primary-btn"
+            disabled={loading}
+          >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
 

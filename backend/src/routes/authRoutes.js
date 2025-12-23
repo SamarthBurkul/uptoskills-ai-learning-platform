@@ -1,5 +1,5 @@
 // backend/src/routes/authRoutes.js
-const express = require("express");      
+const express = require("express");
 
 const {
   registerUser,

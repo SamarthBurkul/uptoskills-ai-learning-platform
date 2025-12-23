@@ -1,3 +1,4 @@
+// backend/src/server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -18,7 +19,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-        "https://uptoskills-ai-learning-platform.vercel.app",
+      "https://uptoskills-ai-learning-platform.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -29,18 +30,25 @@ app.use(
 // Routes
 app.use("/api/auth", authRoutes);
 
+// Health route
 app.get("/", (req, res) => {
   res.send("Uptoskills backend running");
 });
 
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: "Internal Server Error" });
+  res
+    .status(500)
+    .json({ success: false, message: "Internal Server Error" });
 });
 
 module.exports = app;
 
+// Local dev only
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 8000;
-  app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(`🚀 Server listening on port ${PORT}`)
+  );
 }
