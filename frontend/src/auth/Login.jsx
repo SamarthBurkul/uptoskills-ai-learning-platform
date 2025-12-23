@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
 import "./auth.css";
+import { auth, googleProvider, signInWithPopup } from "../firebase";
 
 const Login = () => {
   const [form, setForm] = useState({
@@ -27,17 +28,20 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: form.email,
-          password: form.password,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -45,12 +49,49 @@ const Login = () => {
         throw new Error(data.message || "Login failed");
       }
 
-      // optional: store token in localStorage as well
       if (data.data?.accessToken) {
         localStorage.setItem("uptoskills_token", data.data.accessToken);
       }
 
-      // redirect to dashboard (placeholder route for now)
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // 1) Google popup via Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // 2) Firebase ID token for this user
+      const idToken = await user.getIdToken(true);
+
+      // 3) Send to backend for verification + JWT generation
+      const res = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/oauth-login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ provider: "google", idToken }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      if (data.data?.accessToken) {
+        localStorage.setItem("uptoskills_token", data.data.accessToken);
+      }
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -131,14 +172,19 @@ const Login = () => {
             {loading ? "Logging in..." : "Log In"}
           </button>
 
-          <button type="button" className="auth-social-btn google">
+          <button
+            type="button"
+            className="auth-social-btn google"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
             <span className="auth-social-icon">G</span>
             <span>Sign in with Google</span>
           </button>
 
-          <button type="button" className="auth-social-btn apple">
+          <button type="button" className="auth-social-btn apple" disabled>
             <span className="auth-social-icon"></span>
-            <span>Sign in with Apple</span>
+            <span>Sign in with Apple (coming soon)</span>
           </button>
 
           <p className="auth-bottom-text">

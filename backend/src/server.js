@@ -47,6 +47,7 @@ app.use(
   })
 );
 
+app.use("/api/auth", authRoutes);
 // --- Routes ---
 
 // Route Middleware: When a request hits the path '/api/auth', use the imported authRoutes router to handle it, app.use(path, router) says: For any URL starting with /api/auth, send the request into authRoutes. authRoutes itself is another mini router that has detailed routes for /register, /login, etc. This keeps your server organized: server.js knows which group of routes to use, and authRoutes.js knows exact paths and controllers. app.use("/api/auth", authRoutes);

@@ -1,7 +1,8 @@
-// src/controllers/authController.js
+const axios = require("axios");
 const User = require("../models/User");
 
-// helper: send consistent success responses
+// ---------- helpers ----------
+
 const success = (res, statusCode, data, message) => {
   return res.status(statusCode).json({
     success: true,
@@ -10,7 +11,6 @@ const success = (res, statusCode, data, message) => {
   });
 };
 
-// helper: send error responses
 const fail = (res, statusCode, message) => {
   return res.status(statusCode).json({
     success: false,
@@ -18,15 +18,13 @@ const fail = (res, statusCode, message) => {
   });
 };
 
-// helper: wrap async handlers
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
-// helper to set cookies
 const setAuthCookies = (res, accessToken, refreshToken) => {
   const options = {
     httpOnly: true,
-    secure: false, // set true in production with HTTPS
+    secure: false, // true in production with HTTPS
     sameSite: "lax",
   };
 
@@ -35,7 +33,6 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
     .cookie("refreshToken", refreshToken, options);
 };
 
-// generate tokens and save refreshToken on user
 const generateTokens = async (userId) => {
   const user = await User.findById(userId);
   const accessToken = user.generateAccessToken();
@@ -47,7 +44,8 @@ const generateTokens = async (userId) => {
   return { accessToken, refreshToken };
 };
 
-// POST /api/auth/register
+// ---------- normal email/password ----------
+
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
 
@@ -81,7 +79,6 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 });
 
-// POST /api/auth/login
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -114,7 +111,115 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 });
 
-// GET /api/auth/current-user
+// ---------- Google OAuth ----------
+
+// Verify Firebase ID token using Firebase Auth REST API (accounts:lookup)
+const verifyFirebaseIdToken = async (idToken) => {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) {
+    throw new Error("FIREBASE_WEB_API_KEY not set in backend .env");
+  }
+
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`;
+  const { data } = await axios.post(url, { idToken });
+
+  if (!data.users || data.users.length === 0) {
+    throw new Error("No user found for this token");
+  }
+
+  const userInfo = data.users[0];
+  return {
+    email: userInfo.email,
+    fullName: userInfo.displayName || userInfo.email.split("@")[0],
+  };
+};
+
+// POST /api/auth/oauth-login
+const oauthLogin = asyncHandler(async (req, res) => {
+  const { provider, idToken } = req.body;
+
+  // debug logs IN the handler
+  console.log("OAUTH body:", {
+    provider,
+    idToken: idToken ? idToken.slice(0, 20) + "..." : undefined,
+  });
+  console.log(
+    "FIREBASE_WEB_API_KEY:",
+    process.env.FIREBASE_WEB_API_KEY ? "set" : "missing"
+  );
+  console.log("ACCESS_TOKEN_SECRET:", !!process.env.ACCESS_TOKEN_SECRET);
+  console.log("REFRESH_TOKEN_SECRET:", !!process.env.REFRESH_TOKEN_SECRET);
+
+  if (provider !== "google") {
+    return fail(res, 400, "Unsupported provider");
+  }
+
+  if (!idToken) {
+    return fail(res, 400, "ID token is required");
+  }
+
+  try {
+    const { email, fullName } = await verifyFirebaseIdToken(idToken);
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        fullName,
+        email,
+        // dummy password; real login is via Google only
+        password: `${Date.now()}_${email}`,
+      });
+    }
+
+    const { accessToken, refreshToken } = await generateTokens(user._id);
+    const safeUser = await User.findById(user._id).select(
+      "-password -refreshToken"
+    );
+
+    setAuthCookies(res, accessToken, refreshToken);
+
+    return success(
+      res,
+      200,
+      { user: safeUser, accessToken, refreshToken },
+      "OAuth login successful"
+    );
+  } catch (err) {
+    console.error(
+      "Firebase token verify error:",
+      err.response?.data || err.message
+    );
+    return fail(res, 400, "Invalid Google token");
+  }
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  // Optional: clear refresh token in DB
+  if (req.user?._id) {
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $unset: { refreshToken: 1 } },
+      { new: true }
+    );
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  };
+
+  // Clear auth cookies
+  res
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options);
+
+  return success(res, 200, null, "Logged out successfully");
+});
+
+
+// ---------- current user ----------
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   return success(res, 200, req.user, "User fetched successfully");
 });
@@ -123,4 +228,7 @@ module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  oauthLogin,
+  logoutUser,
+
 };

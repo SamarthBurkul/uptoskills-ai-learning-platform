@@ -7,8 +7,7 @@ import {
 } from "react-router-dom";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
-
-const Dashboard = () => <h1>Dashboard coming soon</h1>;
+import Dashboard from "./dashboard/Dashboard";
 
 function App() {
   return (
