@@ -29,7 +29,7 @@ const Login = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
         {
           method: "POST",
           headers: {
@@ -74,7 +74,7 @@ const Login = () => {
 
       // 3) Send to backend for verification + JWT generation
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URLL}/api/auth/oauth-login`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -24,8 +24,9 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/auth/register`,
+      
+const res = await fetch(
+  `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
   {
     method: "POST",
     headers: {
@@ -39,7 +40,6 @@ const Signup = () => {
     }),
   }
 );
-
       const data = await res.json();
 
       if (!res.ok || data.success === false) {
