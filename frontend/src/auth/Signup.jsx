@@ -25,7 +25,7 @@ const Signup = () => {
 
     try {
       const res = await fetch(
-  `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
+  `${import.meta.env.VITE_API_BASE_URL}/api/auth/register`,
   {
     method: "POST",
     headers: {

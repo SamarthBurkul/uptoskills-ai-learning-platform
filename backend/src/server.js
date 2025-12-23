@@ -1,5 +1,3 @@
-// backend/src/server.js
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -17,19 +15,19 @@ connectDB();
 app.use(express.json());
 app.use(cookieParser());
 
-// backend/src/server.js
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://uptoskills-ai-learning-platform.vercel.app", // Your actual frontend
-      /\.vercel\.app$/ // This regex allows all your Vercel preview links
+      "https://uptoskills-ai-learning-platform.vercel.app",
+      /\.vercel\.app$/ 
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
 // routes
 app.use("/api/auth", authRoutes);
 
@@ -37,5 +35,15 @@ app.get("/", (req, res) => {
   res.send("Uptoskills backend running");
 });
 
-// IMPORTANT: export app for Vercel (NO app.listen here)
+app.options('*', cors()); // Automatically handle pre-flight requests
+
+// IMPORTANT: export app for Vercel
 module.exports = app;
+
+// FIXED: Local listener for development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Local server running on http://localhost:${PORT}`);
+  });
+}
