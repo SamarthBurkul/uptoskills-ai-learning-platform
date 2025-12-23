@@ -35,12 +35,13 @@ app.get("/", (req, res) => {
   res.send("Uptoskills backend running");
 });
 
-app.options('*', cors()); // Automatically handle pre-flight requests
+// ✅ FIXED for Express v5: Named wildcard parameter
+app.options('/*splat', cors()); 
 
 // IMPORTANT: export app for Vercel
 module.exports = app;
 
-// FIXED: Local listener for development
+// Local listener for development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 8000;
   app.listen(PORT, () => {
