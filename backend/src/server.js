@@ -8,13 +8,12 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
-// connect DB
 connectDB();
 
-// middlewares
 app.use(express.json());
 app.use(cookieParser());
 
+// Synchronized CORS for Vercel and Localhost
 app.use(
   cors({
     origin: [
@@ -28,20 +27,17 @@ app.use(
   })
 );
 
-// routes
 app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Uptoskills backend running");
 });
 
-// ✅ FIXED for Express v5: Named wildcard parameter
+// ✅ Corrected for Express v5 path-to-regexp
 app.options('/*splat', cors()); 
 
-// IMPORTANT: export app for Vercel
 module.exports = app;
 
-// Local listener for development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 8000;
   app.listen(PORT, () => {
